@@ -31,7 +31,7 @@ def to_list_without_nan(v):
     return [e for e in list(v.values()) if str(e) != 'nan']
 
 #convert a geometry object to a polygon
-def json_2_Polygon(json):
+def json_2_Polygon_in_xy(json):
     vect = json[37:].split('[')
     result = []
     for pos in vect:
@@ -40,7 +40,7 @@ def json_2_Polygon(json):
             coord = inte.split(",")
             lon = float(coord[0])
             lat = float(coord[1])
-            result.append(net.convert(lon, lat))
+            result.append(net.convertLonLat2XY(lon, lat))
     return result
 
 def lane_2_length(stuff):
@@ -49,6 +49,16 @@ def lane_2_length(stuff):
         return lanes.getLength()
     except:
         print(most_used_lanes.index[i])
+
+def get_commune_from_xy(x, y, location_in_scope):
+    point = Point(x,y)
+    location = location_in_scope[0]
+    i = 0
+    while not (check_if_in_polygon(polygons_in_scope[shape_considered], point_arr) or check_if_in_polygon(polygons_in_scope[shape_considered], point_dep)):
+        i += 1
+        location = location_in_scope[i]
+    return location
+
 
 ########################### variables ##############################
 
@@ -83,8 +93,6 @@ car_ratio = 0.20
 raw_data = pd.read_csv(r'C:/Users/simon/Documents/Supélec Projet 3A/flux.csv')
 communes = pd.read_csv(r'C:/Users/simon/Documents/Supélec Projet 3A/les-communes-generalisees-dile-de-france.csv', sep=";")
 
-########################## processing #############################
-
 #fill with polygons of communes in scope
 polygons_in_scope = {}
 
@@ -94,26 +102,7 @@ for n in range(len(communes)):
         polygons_in_scope[communes['insee'][n]] = Polygon(coord)
 
 #list of communes postal codes in scope
-communes_in_paris = list(polygons_in_scope.keys())
-
-#create a dictionary
-edge_2_location = {}
-
-#fill dictionary with corresponding edges
-for edge in net.getEdges():
-    bndbox = edge.getBoundingBox()
-    X_dep, Y_dep = bndbox[0], bndbox[1]
-    point_dep = Point(net.convertXY2LonLat(X_dep, Y_dep))
-    X_arr, Y_arr = bndbox[2], bndbox[3]
-    point_arr = Point(net.convertXY2LonLat(X_arr,Y_arr))
-    commune = communes_in_paris[0]
-    i = 0
-    while not (check_if_in_polygon(polygons_in_scope[commune], point_arr) or check_if_in_polygon(polygons_in_scope[commune], point_dep)):
-        i += 1
-        commune = communes_in_paris[i]
-    communes_2_edges[edge.getID()] = commune
-
-communes_2_edges = {str(k) : v for k,v in communes_2_edges.items() if len(v) != 0}
+location_in_scope = list(polygons_in_scope.keys())
 
 ######################### analysing ############################
 
@@ -121,23 +110,22 @@ tree = ET.parse(r'C:/Users/simon/Documents/Supélec Projet 3A/Paris-sans-tp/truc
 root = tree.getroot()
 
 rawdata = pd.DataFrame(columns = ['id', 'x', 'y', 'angle', 'type', 'speed', 'pos', 'lane', 'slope', 'time'])
-temp_index = 0
 total_length = 0
-arrondissements_length = {}
+
+locations_2_length = {}
+for location in location_in_scope:
+    locations_2_length[str(location)] = 0
 
 for timestep in root.iter('timestep'):
     time = timestep.get('time')
     vehicle = timestep.find('vehicle')
     if not vehicle is None:
         new_lign = vehicle.attrib
-        new_lign['time'] = time
-        df = pd.DataFrame(new_lign, index=[temp_index])
-        rawdata = rawdata.append(df)
-        temp_index += 1
         total_length += lane_2_length(new_lign['lane'])
-        arrondissements_length[] = 
+        commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_in_scope)
+        locations_2_length[commune] += lane_2_length(new_lign['lane']) 
 
-most_used_lanes = rawdata.groupby('lane')['id'].nunique().sort_values(ascending=False)
+"""most_used_lanes = rawdata.groupby('lane')['id'].nunique().sort_values(ascending=False)
 total_surface_covered = 0
 nodes = []
 
@@ -161,4 +149,4 @@ for i in range(len(most_used_lanes)):
     except:
         print(most_used_lanes.index[i])
 
-print(total_surface_covered)
+print(total_surface_covered)"""
