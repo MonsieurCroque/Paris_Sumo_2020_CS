@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 from shapely.geometry import Point, Polygon
 import sumolib
+import matplotlib.pyplot as plt
 
 ########################### functions ##############################
 
@@ -51,6 +52,12 @@ def get_commune_from_xy(x, y, location_in_scope):
         location = location_names[i]
     return location
 
+def add_to_list(list_to_be_added, i, value):
+    if len(list_to_be_added) <= i:
+        list_to_be_added.append(value)
+    else:
+        list_to_be_added[i] += value    
+
 def increment_dict_value(id_to_increment, dic):
     if id_to_increment in dic.keys():
         dic[id_to_increment] += 1
@@ -61,7 +68,8 @@ def increment_dict_value(id_to_increment, dic):
 
 nb_hour = 2
 path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
-tracefile = 'Paris-sans-tp/trucksTrace.xml'
+tracefile = 'Paris-sans-tp/bicycleTrace.xml'
+duration = 5*60
 
 ########################### sources ###############################
 
@@ -106,15 +114,20 @@ root = tree.getroot()
 rawdata = pd.DataFrame(columns = ['id', 'x', 'y', 'angle', 'type', 'speed', 'pos', 'lane', 'slope', 'time'])
 total_length = 0
 
+lane_already_explored = []
 last_positions = {}
 most_used_lanes = {}
+total_length_covered_by_timeslot = []
+nb_lanes_explored_by_timeslot = []
+vehicle_begin = {}
+vehicle_end = {}
 
 commmunes_2_length = {}
 for commune in communes_in_scope:
     commmunes_2_length[commune] = 0
 
 for timestep in root.iter('timestep'):
-    time = timestep.get('time')
+    time = float(timestep.get('time'))
     vehicle = timestep.find('vehicle')
     if not vehicle is None:
         new_lign = vehicle.attrib
@@ -124,7 +137,21 @@ for timestep in root.iter('timestep'):
             commmunes_2_length[commune] += lane_2_length(new_lign['lane'])
             increment_dict_value(new_lign['lane'] ,most_used_lanes)
             last_positions[new_lign['id']] = new_lign['lane']
+            add_to_list(total_length_covered_by_timeslot, int(time/duration), lane_2_length(new_lign['lane']))
+            if not new_lign['lane'] in lane_already_explored:
+                add_to_list(nb_lanes_explored_by_timeslot,int(time/duration), 1)
+            if not new_lign['lane'] in vehicle_begin.keys():
+                vehicle_begin[new_lign['lane']] = time
+            else:
+                vehicle_end[new_lign['lane']] = time
+
+hist_bike = []
+for edge_id in vehicle_end.keys():
+    hist_bike.append(round((vehicle_end[edge_id]-vehicle_begin[edge_id])/60))
 
 print(commmunes_2_length)
 print(total_length)
 print(sorted(most_used_lanes)[:10])
+plt.plot(total_length_covered_by_timeslot)
+plt.plot(nb_lanes_explored_by_timeslot)
+plt.hist(hist_bike, bins=50)
