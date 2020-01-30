@@ -77,13 +77,13 @@ def increment_dict_value(id_to_increment, dic):
 
 ########################### variables ##############################
 
-nb_hour = 2
-
 path2 = 'C:/Users/simon/Documents/Supélec Projet 3A/'
 path = 'C:/Users/wassim/Desktop/Paris_Sumo_2020_CS/'
 tracefile2 = 'Paris-sans-tp/trucksTrace.xml'
 tracefile = 'trace_voitures.xml'
-duration = 5*60
+
+#for timeslot
+duration = 5*60 #seconds
 
 ########################### sources ###############################
 
@@ -107,6 +107,7 @@ if not ('bounds' in locals() or 'bounds' in globals()):
 else:
     print('boundaries already calculated')
 
+#import communes shape
 communes = pd.read_csv(path +'les-communes-generalisees-dile-de-france.csv', sep=";")
 
 #fill with polygons of communes in scope
@@ -120,13 +121,10 @@ for n in range(len(communes)):
 #list of communes postal codes in scope
 communes_in_scope = list(polygons_of_communes_in_scope.keys())
 
-
-######################### METRIC 3 ############################
-
+#import roads shapes and names
 roads = pd.read_csv(path +'shape_idf.csv')
 
-#list(roads["geometry"][n].split(','))
-
+#fill with polygons of roads
 polygons_of_roads_in_scope = {}
 
 for n in range(len(roads)):
@@ -138,71 +136,86 @@ for n in range(len(roads)):
             else:
                 polygons_of_roads_in_scope[roads['name'][n]] = [list(Polygon(LineString(coord).buffer(10)).exterior.coords)]
 
-
-
+#plot roads in Périph
 for poly in polygons_of_roads_in_scope['Boulevard Périphérique Intérieur'].iloc[:5]:
     for x,y in poly:
         plt.scatter(x,y)
+
 plt.show()
-#list of communes postal codes in scope
+
+#list of roads in scope
 roads_in_scope = list(polygons_of_roads_in_scope.keys())
-
-
-
-
-
-
-
 
 ######################### analysing ############################
 
+#open xml file
 tree = ET.parse(path + tracefile)
 root = tree.getroot()
 
-rawdata = pd.DataFrame(columns = ['id', 'x', 'y', 'angle', 'type', 'speed', 'pos', 'lane', 'slope', 'time'])
+#check last position to avoid counting twice
+last_positions = {}
+
+#total length
 total_length = 0
 
+#all explored lanes
 lane_already_explored = []
-last_positions = {}
+
+#length by lane
 most_used_lanes = {}
+
+#by timeslot
 total_length_covered_by_timeslot = []
 nb_lanes_explored_by_timeslot = []
+
+#to get average duration by vehicle
 vehicle_begin = {}
 vehicle_end = {}
-total_length_by_road_surface={}
 
+#length on periph
+total_length_by_road_surface={}
 for roads in roads_in_scope:
     total_length_by_road_surface[roads] = 0
-    
+
+#length on communes
 commmunes_2_length = {}
 for commune in communes_in_scope:
     commmunes_2_length[commune] = 0
 
+#iterate through xml
 for timestep in root.iter('timestep'):
     time = float(timestep.get('time'))
-    vehicle = timestep.find('vehicle')
-    if not vehicle is None:
-        new_lign = vehicle.attrib
-        if (not new_lign['id'] in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
-            total_length += lane_2_length(new_lign['lane'])
-            commune = get_location_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_of_communes_in_scope)
-            commmunes_2_length[commune] += lane_2_length(new_lign['lane'])
-            road = get_location_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_of_roads_in_scope)
-            total_length_by_road_surface[road] += lane_2_length(new_lign['lane'])
-            increment_dict_value(new_lign['lane'] ,most_used_lanes)
-            last_positions[new_lign['id']] = new_lign['lane']
-            add_to_list(total_length_covered_by_timeslot, int(time/duration), lane_2_length(new_lign['lane']))
-            if not new_lign['lane'] in lane_already_explored:
-                add_to_list(nb_lanes_explored_by_timeslot,int(time/duration), 1)
-            if not new_lign['lane'] in vehicle_begin.keys():
-                vehicle_begin[new_lign['lane']] = time
-            else:
-                vehicle_end[new_lign['lane']] = time
+    for vehicle in timestep.findAll('vehicle'):
+    	
+	#if there is a vehicle
+	if not vehicle is None:
+        	new_lign = vehicle.attrib
 
+		#check if first time in lane
+        	if (not new_lign['id'] in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
+            		
+			#update metrics
+			total_length += lane_2_length(new_lign['lane'])
+            		commune = get_location_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_of_communes_in_scope)
+            		commmunes_2_length[commune] += lane_2_length(new_lign['lane'])
+            		road = get_location_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_of_roads_in_scope)
+            		total_length_by_road_surface[road] += lane_2_length(new_lign['lane'])
+            		increment_dict_value(new_lign['lane'] ,most_used_lanes)
+            		last_positions[new_lign['id']] = new_lign['lane']
+            		add_to_list(total_length_covered_by_timeslot, int(time/duration), lane_2_length(new_lign['lane']))
+            		if not new_lign['lane'] in lane_already_explored:
+                		add_to_list(nb_lanes_explored_by_timeslot,int(time/duration), 1)
+            		if not new_lign['lane'] in vehicle_begin.keys():
+                		vehicle_begin[new_lign['lane']] = time
+            		else:
+                		vehicle_end[new_lign['lane']] = time
+
+#print histogram for bikes
 hist_bike = []
 for edge_id in vehicle_end.keys():
     hist_bike.append(round((vehicle_end[edge_id]-vehicle_begin[edge_id])/60))
-    
+
+#print result
 print(total_length_by_road_surface)
 print(commmunes_2_length)
 print(total_length)
