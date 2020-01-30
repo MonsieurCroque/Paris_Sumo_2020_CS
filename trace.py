@@ -10,15 +10,13 @@ import random
 from shapely.geometry import Point, Polygon
 import sumolib
 
+########################### variables ##############################
 
 path=''
 tracefile='trace_voitrues'
+
 ########################### functions ##############################
 
-def cleaner(name):
-    return name.replace("Î",a).replace("â",a).replace("'", '').replace('ê','e').replace(" ", '_').replace(",", '').replace('-','').replace("é", 'e').replace('è','e')
-
-#check if there is a point from polygon in scope
 def check_each_points(polygon, bnd_inf, bnd_sup):
     for point in polygon:
         if not ((point[0] < bnd_inf[0]) or (point[0] > bnd_sup[0]) or (point[1] < bnd_inf[1]) or (point[1] > bnd_sup[1])):
@@ -57,7 +55,7 @@ def get_commune_from_xy(x, y, location_in_scope):
     point = Point(x,y)
     location = location_in_scope[0]
     i = 0
-    while not (check_if_in_polygon(polygons_in_scope[shape_considered], point_arr) or check_if_in_polygon(polygons_in_scope[shape_considered], point_dep)):
+    while not (check_if_in_polygon(location_in_scope[shape_considered], point_arr) or check_if_in_polygon(location_in_scope[shape_considered], point_dep)):
         i += 1
         location = location_in_scope[i]
     return location
@@ -77,7 +75,7 @@ nb_hour = 2
 #import network
 if not ('net' in locals() or 'net' in globals()):
     global net
-    net = sumolib.net.readNet('osm.net.xml')
+    net = sumolib.net.readNet(r'C:\Users\simon\Documents\Supélec Projet 3A\Paris-sans-tp\osm.net.xml')
     print('net successfully imported')
 else:
     print('net already imported')
@@ -94,34 +92,28 @@ if not ('bounds' in locals() or 'bounds' in globals()):
 else:
     print('boundaries already calculated')
 
-scale_factor = 0.15
-car_ratio = 0.20
-
-#communes_in_paris = ['Asnières-sur-Seine', 'Bobigny', 'Clamart', 'Issy-les-Moulineaux', 'Ivry-sur-Seine', 'Courbevoie', 'Nanterre', 'Montreuil', 'Montrouge', 'Pantin', 'Saint-Denis', 'Boulogne-Billancourt', 'Paris 1er Arrondissement', 'Paris 2e Arrondissement', 'Paris 3e Arrondissement', 'Paris 4e Arrondissement', 'Paris 5e Arrondissement', 'Paris 6e Arrondissement', 'Paris 7e Arrondissement', 'Paris 8e Arrondissement', 'Paris 9e Arrondissement', 'Paris 10e Arrondissement', 'Paris 11e Arrondissement', 'Paris 12e Arrondissement', 'Paris 13e Arrondissement', 'Paris 14e Arrondissement', 'Paris 15e Arrondissement', 'Paris 16e Arrondissement', 'Paris 17e Arrondissement', 'Paris 18e Arrondissement', 'Paris 19e Arrondissement', 'Paris 20e Arrondissement']
 communes = pd.read_csv(path +'les-communes-generalisees-dile-de-france.csv', sep=";")
-
 
 #fill with polygons of communes in scope
 polygons_of_communes_in_scope = {}
 
 for n in range(len(communes)):
-    coord = json_2_Polygon(communes["Geo Shape"][n])
+    coord = json_2_Polygon_in_xy(communes["Geo Shape"][n])
     if check_each_points(coord, bound_inf, bound_sup):
         polygons_of_communes_in_scope[communes['insee'][n]] = Polygon(coord)
 
 #list of communes postal codes in scope
-communes_in_scope = list(polygons_in_scope.keys())
+communes_in_scope = list(polygons_of_communes_in_scope.keys())
 
 ######################### analysing ############################
 
-tree = ET.parse(path+'/'+tracefile.xml)
+tree = ET.parse(r'C:/Users/simon/Documents/Supélec Projet 3A/Paris-sans-tp/trucksTrace.xml')
 root = tree.getroot()
 
 rawdata = pd.DataFrame(columns = ['id', 'x', 'y', 'angle', 'type', 'speed', 'pos', 'lane', 'slope', 'time'])
 total_length = 0
 
 last_positions = {}
-
 most_used_lanes = {}
 
 commmunes_2_length = {}
@@ -135,6 +127,7 @@ for timestep in root.iter('timestep'):
         new_lign = vehicle.attrib
         if (not new_lign['id'] in last_position.keys()) or (last_position[new_lign['id']] != new_lign['lane']):
             total_length += lane_2_length(new_lign['lane'])
-            commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_in_scope)
+            commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), communes_in_scope)
             commmunes_2_length[commune] += lane_2_length(new_lign['lane'])
-            last_position[new_lign['id']] = new_lign['lane']
+            increment_dict_value(new_lign['lane'] ,most_used_lanes)
+            last_positions[new_lign['id']] = new_lign['lane']
