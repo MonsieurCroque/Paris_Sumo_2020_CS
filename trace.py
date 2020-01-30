@@ -9,11 +9,6 @@ import pandas as pd
 from shapely.geometry import Point, Polygon
 import sumolib
 
-########################### variables ##############################
-
-path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
-tracefile = 'Paris-sans-tp/trucksTrace.xml'
-
 ########################### functions ##############################
 
 def check_each_points_xy(polygon, bnd_inf, bnd_sup):
@@ -44,15 +39,16 @@ def lane_2_length(stuff):
         lanes = net.getLane(stuff)
         return lanes.getLength()
     except:
-        print("error lane has no length")
+        return 0
 
 def get_commune_from_xy(x, y, location_in_scope):
     point = Point(x,y)
-    location = location_in_scope[0]
+    location_names = list(location_in_scope.keys())
+    location = location_names[0]
     i = 0
     while not check_if_in_polygon(location_in_scope[location], point):
         i += 1
-        location = location_in_scope[i]
+        location = location_names[i]
     return location
 
 def increment_dict_value(id_to_increment, dic):
@@ -64,6 +60,8 @@ def increment_dict_value(id_to_increment, dic):
 ########################### variables ##############################
 
 nb_hour = 2
+path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
+tracefile = 'Paris-sans-tp/trucksTrace.xml'
 
 ########################### sources ###############################
 
@@ -94,7 +92,7 @@ polygons_of_communes_in_scope = {}
 
 for n in range(len(communes)):
     coord = json_2_Polygon_in_xy(communes["Geo Shape"][n])
-    if check_each_points(coord, bound_inf, bound_sup):
+    if check_each_points_xy(coord, bound_inf, bound_sup):
         polygons_of_communes_in_scope[communes['insee'][n]] = Polygon(coord)
 
 #list of communes postal codes in scope
@@ -113,7 +111,7 @@ most_used_lanes = {}
 
 commmunes_2_length = {}
 for commune in communes_in_scope:
-    commmunes_2_length[str(commune)] = 0
+    commmunes_2_length[commune] = 0
 
 for timestep in root.iter('timestep'):
     time = timestep.get('time')
@@ -122,7 +120,7 @@ for timestep in root.iter('timestep'):
         new_lign = vehicle.attrib
         if (not new_lign['id'] in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
             total_length += lane_2_length(new_lign['lane'])
-            commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), communes_in_scope)
+            commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_of_communes_in_scope)
             commmunes_2_length[commune] += lane_2_length(new_lign['lane'])
             increment_dict_value(new_lign['lane'] ,most_used_lanes)
             last_positions[new_lign['id']] = new_lign['lane']
