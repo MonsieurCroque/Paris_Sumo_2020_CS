@@ -69,7 +69,7 @@ nb_hour = 2
 #import network
 if not ('net' in locals() or 'net' in globals()):
     global net
-    net = sumolib.net.readNet(r'C:\Users\simon\Documents\Supélec Projet 3A\Paris-sans-tp\osm.net.xml')
+    net = sumolib.net.readNet('osm.net.xml')
     print('net successfully imported')
 else:
     print('net already imported')
@@ -90,8 +90,7 @@ scale_factor = 0.15
 car_ratio = 0.20
 
 #communes_in_paris = ['Asnières-sur-Seine', 'Bobigny', 'Clamart', 'Issy-les-Moulineaux', 'Ivry-sur-Seine', 'Courbevoie', 'Nanterre', 'Montreuil', 'Montrouge', 'Pantin', 'Saint-Denis', 'Boulogne-Billancourt', 'Paris 1er Arrondissement', 'Paris 2e Arrondissement', 'Paris 3e Arrondissement', 'Paris 4e Arrondissement', 'Paris 5e Arrondissement', 'Paris 6e Arrondissement', 'Paris 7e Arrondissement', 'Paris 8e Arrondissement', 'Paris 9e Arrondissement', 'Paris 10e Arrondissement', 'Paris 11e Arrondissement', 'Paris 12e Arrondissement', 'Paris 13e Arrondissement', 'Paris 14e Arrondissement', 'Paris 15e Arrondissement', 'Paris 16e Arrondissement', 'Paris 17e Arrondissement', 'Paris 18e Arrondissement', 'Paris 19e Arrondissement', 'Paris 20e Arrondissement']
-raw_data = pd.read_csv(r'C:/Users/simon/Documents/Supélec Projet 3A/flux.csv')
-communes = pd.read_csv(r'C:/Users/simon/Documents/Supélec Projet 3A/les-communes-generalisees-dile-de-france.csv', sep=";")
+communes = pd.read_csv('les-communes-generalisees-dile-de-france.csv', sep=";")
 
 #fill with polygons of communes in scope
 polygons_in_scope = {}
