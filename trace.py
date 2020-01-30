@@ -10,6 +10,9 @@ import random
 from shapely.geometry import Point, Polygon
 import sumolib
 
+
+path=''
+tracefile='trace_voitrues'
 ########################### functions ##############################
 
 def cleaner(name):
@@ -59,6 +62,11 @@ def get_commune_from_xy(x, y, location_in_scope):
         location = location_in_scope[i]
     return location
 
+def increment_dict_value(id_to_increment, dic):
+    if id_to_increment in dic.keys():
+        dic[id_to_increment] += 1
+    else:
+        dic[id_to_increment] = 1
 
 ########################### variables ##############################
 
@@ -90,62 +98,43 @@ scale_factor = 0.15
 car_ratio = 0.20
 
 #communes_in_paris = ['Asnières-sur-Seine', 'Bobigny', 'Clamart', 'Issy-les-Moulineaux', 'Ivry-sur-Seine', 'Courbevoie', 'Nanterre', 'Montreuil', 'Montrouge', 'Pantin', 'Saint-Denis', 'Boulogne-Billancourt', 'Paris 1er Arrondissement', 'Paris 2e Arrondissement', 'Paris 3e Arrondissement', 'Paris 4e Arrondissement', 'Paris 5e Arrondissement', 'Paris 6e Arrondissement', 'Paris 7e Arrondissement', 'Paris 8e Arrondissement', 'Paris 9e Arrondissement', 'Paris 10e Arrondissement', 'Paris 11e Arrondissement', 'Paris 12e Arrondissement', 'Paris 13e Arrondissement', 'Paris 14e Arrondissement', 'Paris 15e Arrondissement', 'Paris 16e Arrondissement', 'Paris 17e Arrondissement', 'Paris 18e Arrondissement', 'Paris 19e Arrondissement', 'Paris 20e Arrondissement']
-communes = pd.read_csv('les-communes-generalisees-dile-de-france.csv', sep=";")
+communes = pd.read_csv(path +'les-communes-generalisees-dile-de-france.csv', sep=";")
+
 
 #fill with polygons of communes in scope
-polygons_in_scope = {}
+polygons_of_communes_in_scope = {}
 
 for n in range(len(communes)):
     coord = json_2_Polygon(communes["Geo Shape"][n])
     if check_each_points(coord, bound_inf, bound_sup):
-        polygons_in_scope[communes['insee'][n]] = Polygon(coord)
+        polygons_of_communes_in_scope[communes['insee'][n]] = Polygon(coord)
 
 #list of communes postal codes in scope
-location_in_scope = list(polygons_in_scope.keys())
+communes_in_scope = list(polygons_in_scope.keys())
 
 ######################### analysing ############################
 
-tree = ET.parse(r'C:/Users/simon/Documents/Supélec Projet 3A/Paris-sans-tp/truckTrace.xml')
+tree = ET.parse(path+'/'+tracefile.xml)
 root = tree.getroot()
 
 rawdata = pd.DataFrame(columns = ['id', 'x', 'y', 'angle', 'type', 'speed', 'pos', 'lane', 'slope', 'time'])
 total_length = 0
 
-locations_2_length = {}
-for location in location_in_scope:
-    locations_2_length[str(location)] = 0
+last_positions = {}
+
+most_used_lanes = {}
+
+commmunes_2_length = {}
+for commune in communes_in_scope:
+    commmunes_2_length[str(commune)] = 0
 
 for timestep in root.iter('timestep'):
     time = timestep.get('time')
     vehicle = timestep.find('vehicle')
     if not vehicle is None:
         new_lign = vehicle.attrib
-        total_length += lane_2_length(new_lign['lane'])
-        commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_in_scope)
-        locations_2_length[commune] += lane_2_length(new_lign['lane']) 
-
-"""most_used_lanes = rawdata.groupby('lane')['id'].nunique().sort_values(ascending=False)
-total_surface_covered = 0
-nodes = []
-
-for i in range(len(most_used_lanes)):
-    try:
-        lanes = net.getLane(most_used_lanes.index[i])
-        total_surface_covered += lanes.getLength() * most_used_lanes[i]
-    except:
-        nodes.append(most_used_lanes.index[i])
-
-print(str(round(len(nodes)/len(most_used_lanes)*100)) + "% is not lane")
-print(total_surface_covered)
-
-most_used_lanes = rawdata.groupby('lane')['id'].nunique().sort_values(ascending=False)
-total_surface_covered = 0
-
-for i in range(len(most_used_lanes)):
-    try:
-        lanes = net.getLane(most_used_lanes.index[i])
-        total_surface_covered += lanes.getLength() * most_used_lanes[i]
-    except:
-        print(most_used_lanes.index[i])
-
-print(total_surface_covered)"""
+        if (not new_lign['id'] in last_position.keys()) or (last_position[new_lign['id']] != new_lign['lane']):
+            total_length += lane_2_length(new_lign['lane'])
+            commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), polygons_in_scope)
+            commmunes_2_length[commune] += lane_2_length(new_lign['lane'])
+            last_position[new_lign['id']] = new_lign['lane']
