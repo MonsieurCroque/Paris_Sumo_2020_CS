@@ -60,8 +60,10 @@ def increment_dict_value(id_to_increment, dic):
 ########################### variables ##############################
 
 nb_hour = 2
-path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
-tracefile = 'Paris-sans-tp/trucksTrace.xml'
+path2 = 'C:/Users/simon/Documents/Supélec Projet 3A/'
+path = 'C:/Users/wassim/Desktop/Paris_Sumo_2020_CS/'
+tracefile2 = 'Paris-sans-tp/trucksTrace.xml'
+tracefile = 'trace_voitures.xml'
 
 ########################### sources ###############################
 
