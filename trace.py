@@ -6,18 +6,17 @@
 
 import xml.etree.ElementTree as ET
 import pandas as pd
-import random
 from shapely.geometry import Point, Polygon
 import sumolib
 
 ########################### variables ##############################
 
-path=''
-tracefile='trace_voitrues'
+path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
+tracefile = 'Paris-sans-tp/trucksTrace.xml'
 
 ########################### functions ##############################
 
-def check_each_points(polygon, bnd_inf, bnd_sup):
+def check_each_points_xy(polygon, bnd_inf, bnd_sup):
     for point in polygon:
         if not ((point[0] < bnd_inf[0]) or (point[0] > bnd_sup[0]) or (point[1] < bnd_inf[1]) or (point[1] > bnd_sup[1])):
            return True
@@ -26,10 +25,6 @@ def check_each_points(polygon, bnd_inf, bnd_sup):
 #check if Point is in Polygon
 def check_if_in_polygon(polygon, point):
     return polygon.contains(point)
-
-#convert dictionary to value lists
-def to_list_without_nan(v):
-    return [e for e in list(v.values()) if str(e) != 'nan']
 
 #convert a geometry object to a polygon
 def json_2_Polygon_in_xy(json):
@@ -49,13 +44,13 @@ def lane_2_length(stuff):
         lanes = net.getLane(stuff)
         return lanes.getLength()
     except:
-        print(most_used_lanes.index[i])
+        print("error lane has no length")
 
 def get_commune_from_xy(x, y, location_in_scope):
     point = Point(x,y)
     location = location_in_scope[0]
     i = 0
-    while not (check_if_in_polygon(location_in_scope[shape_considered], point_arr) or check_if_in_polygon(location_in_scope[shape_considered], point_dep)):
+    while not check_if_in_polygon(location_in_scope[location], point):
         i += 1
         location = location_in_scope[i]
     return location
@@ -75,7 +70,7 @@ nb_hour = 2
 #import network
 if not ('net' in locals() or 'net' in globals()):
     global net
-    net = sumolib.net.readNet(r'C:\Users\simon\Documents\Supélec Projet 3A\Paris-sans-tp\osm.net.xml')
+    net = sumolib.net.readNet(path + 'osm.net.xml')
     print('net successfully imported')
 else:
     print('net already imported')
@@ -86,8 +81,8 @@ if not ('bounds' in locals() or 'bounds' in globals()):
     global bound_inf
     global bound_sup
     bounds = net.getBBoxXY()
-    bound_inf = net.convertXY2LonLat(bounds[0][0],bounds[0][1])
-    bound_sup = net.convertXY2LonLat(bounds[1][0],bounds[1][1])
+    bound_inf = (bounds[0][0],bounds[0][1])
+    bound_sup = (bounds[1][0],bounds[1][1])
     print('boundaries successfully calculated')
 else:
     print('boundaries already calculated')
@@ -107,7 +102,7 @@ communes_in_scope = list(polygons_of_communes_in_scope.keys())
 
 ######################### analysing ############################
 
-tree = ET.parse(r'C:/Users/simon/Documents/Supélec Projet 3A/Paris-sans-tp/trucksTrace.xml')
+tree = ET.parse(path + tracefile)
 root = tree.getroot()
 
 rawdata = pd.DataFrame(columns = ['id', 'x', 'y', 'angle', 'type', 'speed', 'pos', 'lane', 'slope', 'time'])
@@ -125,9 +120,13 @@ for timestep in root.iter('timestep'):
     vehicle = timestep.find('vehicle')
     if not vehicle is None:
         new_lign = vehicle.attrib
-        if (not new_lign['id'] in last_position.keys()) or (last_position[new_lign['id']] != new_lign['lane']):
+        if (not new_lign['id'] in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
             total_length += lane_2_length(new_lign['lane'])
             commune = get_commune_from_xy(float(new_lign['x']), float(new_lign['y']), communes_in_scope)
             commmunes_2_length[commune] += lane_2_length(new_lign['lane'])
             increment_dict_value(new_lign['lane'] ,most_used_lanes)
             last_positions[new_lign['id']] = new_lign['lane']
+
+print(commmunes_2_length)
+print(total_length)
+print(sorted(most_used_lanes)[:10])
