@@ -9,7 +9,8 @@ import pandas as pd
 from shapely.geometry import Point, Polygon, LineString
 import sumolib
 import matplotlib.pyplot as plt
-import math
+from math import sin, cos, sqrt, atan2, radians
+import re
 
 ########################### functions ##############################
 
@@ -20,31 +21,18 @@ def check_each_points_xy(polygon, bnd_inf, bnd_sup):
     return False
 
 #check if Point is in Polygon
-def check_if_in_polygon(polygon, point):
-    return polygon.contains(point)
-
+def check_if_in(container, point):
+    return container.distance(point) < 1e-8
 
 #convert a geometry object to a polygon
-def json_2_Polygon_in_xy(json):
-    vect = json[37:].split('[')
+def extract_coordinates_list_from_string(string):
+    vect = re.findall("[0-9.]+", string)
     result = []
-    for pos in vect:
-        if pos != "":
-            inte = pos.split(']')[0]
-            coord = inte.split(",")
-            lon = float(coord[0])
-            lat = float(coord[1])
-            result.append(net.convertLonLat2XY(lon, lat))
-    return result
-
-def json_2_Polygon_in_xy_bis(json):
-    vect = json[12:-2].split(', ')
-    result = []
-    for pos in vect:
-        if pos != "":
-            coord = pos.split(' ')
-            lon = float(coord[0])
-            lat = float(coord[1])
+    for i in range(len(vect)):
+        if i % 2 == 0:
+            lon = float(vect[i])
+        else:
+            lat = float(vect[i])
             result.append(net.convertLonLat2XY(lon, lat))
     return result
 
@@ -59,15 +47,15 @@ def get_location_from_xy(x, y, location_in_scope):
     point = Point(x,y)
     location_names = list(location_in_scope.keys())
     location = location_names[0]
-    i = -1
-    while not check_if_in_polygon(location_in_scope[location], point):
-        if i<len(location_names)-2:
-            i += 1
-            location = location_names[i]
-        else:
-            return 'notinscope'
-            
-    return location
+    i = 1
+    while i < len(location_names) and not check_if_in(location_in_scope[location], point):
+        location = location_names[i]
+        i += 1
+   
+    if  check_if_in(location_in_scope[location], point):
+        return location
+    else:
+        return 'notinscope'
 
 def add_to_list(list_to_be_added, i, value):
     if len(list_to_be_added) <= i:
@@ -81,37 +69,20 @@ def increment_dict_value(id_to_increment, dic):
     else:
         dic[id_to_increment] = 1
 
-from math import sin, cos, sqrt, atan2, radians
-
-def latlon_2_distance(lat1,lon1,lat2,lon2):
-    
-    R = 6373.0
-    
-    lat1=radians(lat1)
-    lat2=radians(lat2)
-    lon1=radians(lon1)
-    lon2=radians(lon2)
-    
-    
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    
-    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    
-    return R * c
-
 def distxy(x1,y1,x2,y2):
-    lon1,lat1=net.convertXY2LonLat(x1,y1)
-    lon2,lat2=net.convertXY2LonLat(x2,y2)
-    return latlon_2_distance(lat1,lon1,lat2,lon2)
+    lon1,lat1 = net.convertXY2LonLat(x1,y1)
+    lon2,lat2 = net.convertXY2LonLat(x2,y2)
+    dlon = radians(lon2) - radians(lon1)
+    dlat = radians(lat2) - radians(lat1)
+    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+    return 6373.0 * 2 * atan2(sqrt(a), sqrt(1 - a))
+
 ########################### variables ##############################
 
-path2 = 'C:/Users/simon/Documents/Supélec Projet 3A/'
-path = 'C:/Users/wassim/Desktop/Paris_Sumo_2020_CS/'
-tracefile2 = 'Paris-sans-tp/trucksTrace.xml'
+path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
+path2 = 'C:/Users/wassim/Desktop/Paris_Sumo_2020_CS/'
 tracefile = 'trace_voitures.xml'
-tracefile = 'trucksTrace.xml'
+tracefile = 'truckTrace.xml'
 
 #for timeslot
 duration = 5*60 #seconds
@@ -138,6 +109,8 @@ if not ('bounds' in locals() or 'bounds' in globals()):
 else:
     print('boundaries already calculated')
 
+
+
 #import communes shape
 communes = pd.read_csv(path +'les-communes-generalisees-dile-de-france.csv', sep=";")
 
@@ -145,12 +118,14 @@ communes = pd.read_csv(path +'les-communes-generalisees-dile-de-france.csv', sep
 polygons_of_communes_in_scope = {}
 
 for n in range(len(communes)):
-    coord = json_2_Polygon_in_xy(communes["Geo Shape"][n])
+    coord = extract_coordinates_list_from_string(communes["Geo Shape"][n])
     if check_each_points_xy(coord, bound_inf, bound_sup):
         polygons_of_communes_in_scope[communes['insee'][n]] = Polygon(coord)
 
 #list of communes postal codes in scope
 communes_in_scope = list(polygons_of_communes_in_scope.keys())
+
+
 
 #import roads shapes and names
 roads = pd.read_csv(path +'shape_idf.csv')
@@ -161,10 +136,9 @@ polygons_of_roads_in_scope = {}
 for n in range(len(roads)):
     if ('Périphérique' in str(roads['name'][n])):
         nameid=roads['name'][n]+'_'+str(roads['osm_id'][n])
-        coord = json_2_Polygon_in_xy_bis(roads["geometry"][n])
+        coord = extract_coordinates_list_from_string(roads["geometry"][n])
         if check_each_points_xy(coord, bound_inf, bound_sup):
-            polygons_of_roads_in_scope[nameid] = Polygon(LineString(coord).buffer(10))
-
+            polygons_of_roads_in_scope[nameid] = LineString(coord)
 
 #list of roads in scope
 roads_in_scope = list(polygons_of_roads_in_scope.keys())
@@ -177,11 +151,9 @@ root = tree.getroot()
 
 #check last position to avoid counting twice
 last_positions = {}
-last_positions_xy = {}
 
 #total length
 total_length = 0
-total_length2 = 0
 
 #all explored lanes
 lane_already_explored = []
@@ -206,7 +178,7 @@ for road in roads_in_scope:
 
 #Create a dictionnary that tells if a vehicule has already visited this road. (vehicule,location): 0 (if not visited) or  1 (if visited)
 
-vehicule_is_in_location={}
+vehicule_is_in_location = {}
 
 
 #length on communes
@@ -243,7 +215,6 @@ for timestep in root.iter('timestep'):
                 
                 # Hold in memory the last position
                 last_positions[new_lign['id']] = new_lign['lane']
-                last_positions_xy[new_lign['id']] = (float(new_lign['x']),float(new_lign['y']))
                 
                 # Distance traveled per time_slot
                 add_to_list(total_length_covered_by_timeslot, int(time/duration), lane_2_length(new_lign['lane']))
@@ -266,6 +237,7 @@ print(total_length_by_road_surface)
 print(commmunes_2_length)
 print(total_length)
 print(sorted(most_used_lanes)[:10])
+
 plt.plot(total_length_covered_by_timeslot)
 plt.plot(nb_lanes_explored_by_timeslot)
 plt.hist(hist_bike, bins=50)
