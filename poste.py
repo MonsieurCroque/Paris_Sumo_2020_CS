@@ -61,14 +61,14 @@ for n in range(len(raw_data)):
         if not ((raw_data['Longitude'][n] < bound_inf[0]) or (raw_data['Longitude'][n] > bound_sup[0]) or (raw_data['Latitude'][n] < bound_inf[1]) or (raw_data['Latitude'][n] > bound_sup[1])):
             
             # check if postal office is in North area
-            if raw_data['Code_postal'][n] in [75014,75015,75013,75005,75006,75007,75016,75116,75001,75004,75012]:
-                endlat,endlon,endnom = nordlat, nordlon, nordnom
-                df = pd.DataFrame(np.array([[raw_data['Longitude'][n], raw_data['Latitude'][n], raw_data['Libellé_du_site'][n],endlon,endlat,endnom]]), columns = ["start station longitude", "start station latitude", 'start nom',"end station longitude", "end station latitude", 'end nom'])
+            if raw_data['Code_postal'][n] in [75008,75009,75010,75011,75002,75003,75017,75018,75019,75020]:
+                startlat,startlon,startnom = nordlat, nordlon, nordnom
+                df = pd.DataFrame(np.array([[startlon,startlat,startnom,raw_data['Longitude'][n], raw_data['Latitude'][n], raw_data['Libellé_du_site'][n]]]), columns = ["start station longitude", "start station latitude", 'start nom',"end station longitude", "end station latitude", 'end nom'])
                 preprocessed_data = preprocessed_data.append(df)
             # or in South area
-            elif raw_data['Code_postal'][n] in [75008,75009,75010,75011,75002,75003,75017,75018,75019,75020]:
-                endlat,endlon,endnom = sudlat, sudlon, sudnom
-                df = pd.DataFrame(np.array([[raw_data['Longitude'][n], raw_data['Latitude'][n], raw_data['Libellé_du_site'][n],endlon,endlat,endnom]]), columns = ["start station longitude", "start station latitude", 'start nom',"end station longitude", "end station latitude", 'end nom'])
+            elif raw_data['Code_postal'][n] in [75014,75015,75013,75005,75006,75007,75016,75116,75001,75004,75012]:
+                startlat,startlon,startnom = sudlat, sudlon, sudnom
+                df = pd.DataFrame(np.array([[startlon,startlat,startnom,raw_data['Longitude'][n], raw_data['Latitude'][n], raw_data['Libellé_du_site'][n]]]), columns = ["start station longitude", "start station latitude", 'start nom',"end station longitude", "end station latitude", 'end nom'])
                 preprocessed_data = preprocessed_data.append(df)
 
 #divide trucks every 30 min

@@ -12,7 +12,7 @@ import sumolib
 ########################### functions ##############################
 
 def cleaner(name):
-    return name.replace("Î",a).replace("â",a).replace("'", '').replace('ê','e').replace(" ", '_').replace(",", '').replace('-','').replace("é", 'e').replace('è','e')
+    return name.replace("Î",'').replace("â",'').replace("'", '').replace('ê','e').replace(" ", '_').replace(",", '').replace('-','').replace("é", 'e').replace('è','e')
 
 #check if there is a point from polygon in scope
 def check_each_points(polygon, bnd_inf, bnd_sup):
@@ -40,7 +40,7 @@ def json_2_Polygon(json):
 
 #check if vehicle belongs to edge
 def filter_type_node(edge,vehicule_type):
-    return edge[0].allows(vehicule_type)
+    return edge.allows(vehicule_type)
 
 ########################### variables ##############################
 
