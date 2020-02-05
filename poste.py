@@ -11,20 +11,20 @@ import sumolib
 
 ########################### variable ##############################
 
-path = 'C:/Users/simon/Documents/Supélec Projet 3A'
+path = ''
 
 ########################### sources ###############################
 
 #import network
 if not ('net' in locals() or 'net' in globals()):
     global net
-    net = sumolib.net.readNet(path + '/Paris-sans-tp/osm.net.xml')
+    net = sumolib.net.readNet(path + 'osm.net.xml')
     print('net successfully imported')
 else:
     print('net already imported')
 
 # raw data from https://datanova.laposte.fr/explore/dataset/laposte_poincont2/information/?disjunctive.caracteristique_du_site&disjunctive.code_postal&disjunctive.localite&disjunctive.code_insee&disjunctive.precision_du_geocodage
-raw_data = pd.read_csv(path + "/laposte_poincont2.csv", sep=";")
+raw_data = pd.read_csv(path + "laposte_poincont2.csv", sep=";")
 
 #   https://www.docaufutur.fr/2017/03/05/a-decouverte-de-plateforme-industrielle-de-courrier-de-wissous/
 #   https://fr.m.wikipedia.org/wiki/Plateforme_industrielle_du_courrier
@@ -32,7 +32,7 @@ raw_data = pd.read_csv(path + "/laposte_poincont2.csv", sep=";")
 #       https://www.bing.com/maps?&cp=48.819931~2.214436&lvl=10&osid=bb7f3961-b5e8-49bd-9c1e-7fc591b063ef&v=2&sV=2&form=S00027
 
 # PIC Paris Sud
-sudlat, sudlon, sudnom = 48.801846, 2.342904, "PIC_SUD"
+sudlat, sudlon, sudnom = 48.797113, 2.343011, "PIC_SUD"
 
 # PIC Paris Nord
 nordlat, nordlon, nordnom = 48.933346, 2.372138, "PIC_NORD"
@@ -78,7 +78,7 @@ preprocessed_data['starttime'] =[(round((random()*10 + int(i/len(preprocessed_da
 preprocessed_data = preprocessed_data.sort_values('starttime')
 
 # export preprocessed data to csv file
-preprocessed_data.to_csv(path + "/poste_list.csv", index=False, index_label = None)
+preprocessed_data.to_csv("poste_list.csv", index=False, index_label = None)
 
 ######################################################################
 ######################## GENERATING OD MATRIX ########################
@@ -87,10 +87,10 @@ preprocessed_data.to_csv(path + "/poste_list.csv", index=False, index_label = No
 #variables
 radius = 200
 veh_type = "truck"
-path = 'C:/Users/simon/Documents/Supélec Projet 3A'
+path = ''
 
 #import preprocessed data
-data = pd.read_csv(path + '/poste_list.csv', sep=",")
+data = pd.read_csv('poste_list.csv', sep=",")
 
 #run OD_2_sumo.py before running this line
 OD_2_sumo(radius, path, veh_type, data)

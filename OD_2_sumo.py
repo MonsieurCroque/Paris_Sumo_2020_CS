@@ -111,7 +111,7 @@ def OD_2_sumo(radius, path, veh_type, data):
         trip_lines.append(new_trip_line)
     
     #export to xml file in folder
-    output_file = open(path + '\Paris-sans-tp\generated_'+veh_type+'_input.xml', 'w')
+    output_file = open(path + 'Paris-sans-tp\generated_'+veh_type+'_input.xml', 'w')
     output_file.write('<?xml version="1.0" encoding="UTF-8"?>')
     output_file.write('<routes xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">')
     output_file.write('<vType id="veh_'+veh_type+'" vClass="'+veh_type+'"/>')
