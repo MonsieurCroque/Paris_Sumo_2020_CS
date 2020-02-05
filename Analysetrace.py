@@ -7,8 +7,8 @@ path2 = 'C:/Users/simon/Documents/Supélec Projet 3A/'
 path = 'C:/Users/wassim/Desktop/Paris_Sumo_2020_CS/'
 tracefile2 = 'Paris-sans-tp/trucksTrace.xml'
 #tracefile = 'bicycleTrace.xml'
-#tracefile = 'trucksTrace.xml'
-tracefile = 'truckTracev2.xml'
+tracefile = 'busTrace.xml'
+#tracefile = 'truckTracev2.xml'
 
 #for timeslot
 duration = 5*60 #seconds
@@ -26,10 +26,10 @@ from scipy.spatial import Voronoi
 
 
 
-idtotest=['truckPIC_SUD_to_PARIS_RPU_FOCH_RP_0','truckPIC_NORD_to_PARIS_PLACE_CLICHY_BP_169',
-'truckPIC_SUD_to_PARIS_STATION_F_BP_86','truckPIC_SUD_to_PARIS_RPU_LOUVRE_RP_17',
-'truckPIC_SUD_to_PARIS_PALAIS_DIENA_BP_126','truckPIC_NORD_to_PARIS_SAINTE_MARGUERITE_142',
-'truckPIC_NORD_to_PARIS_COLISEE_206']
+idtotest=['busSURESNES_-_LONGCHAMP_MAIRIE_DESBASSAYNS_1809','busPORT_ROYAL_-_SAINT-JACQUES_JACQUES_BONSERGENT_3645',
+          'busLE_BOURGET-RER_LANGEVIN_-_WALLON_5383','busPLACE_DE_LA_BOULE_-_LENINE_PONT_DE_SAINT-CLOUD_-_ALBERT_KAHN_6835',
+          'busROND-POINT_PIERRE_TIMBAUD_PLACE_DEBAIN_398','busPORTE_DE_VINCENNES_NATION_-_TRONE_3212',
+          'busPIERRELAIS_-_BLANCHARD_CHARTRES_-_BLANCHARD_2475']
 
 
 
