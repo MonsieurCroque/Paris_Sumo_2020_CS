@@ -148,20 +148,20 @@ def farthest_points_distance(points):
     return list(voronoi_point_desc.values())
 
 
-def get_voronoi_distance(points, fpd_timestep):
+def get_voronoi_distance(points, fcd_timestep):
 
     if len(points) > 8:
         fcd={}
         for point, distance in farthest_points_distance(points):
-            x = p[0]
-            y = p[1] 
+            x = point[0]
+            y = point[1] 
             
-            commune = get_location_from_xy(x, y, polygons_of_communes_in_scope))
+            commune = get_location_from_xy(x, y, polygons_of_communes_in_scope)
             
             if commune not in fcd.keys():
-                fcd[commune] = d
+                fcd[commune] = distance
             else:
-                fcd[commune] = max(fcd[commune],d)
+                fcd[commune] = max(fcd[commune],distance)
             fcd_timestep.append(fcd)
 
 ########################### variables ##############################
