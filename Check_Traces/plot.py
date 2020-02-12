@@ -1,71 +1,105 @@
-#----------------------------------libraries-----------------------------------
+########################### libraries ##############################
 
 # for plotting
 import matplotlib.pyplot as plt
+from xml.etree.cElementTree import iterparse
+import numpy
+import random
+import sumolib
+
+import os
+os.environ["PROJ_LIB"] = "C:\\Users\\simon\\Anaconda3\\pkgs\\proj4-5.2.0-ha925a31_1\\Library\\share"
 
 # for background map
 from mpl_toolkits.basemap import Basemap
 
-#---------------------Interpolation (LS without constraints)-------------------
+########################### functions ##############################
 
-# model for fit
+def generate_positions_for_testing(lane_id, count, x, y, positions, not_explored):
+    if lane_id in positions.keys():
+        positions[lane_id].append(net.convertXY2LonLat(x, y))
+    elif not lane_id in not_explored and count < 101:
+        if random.random() < 0.05:
+            positions[lane_id] = [net.convertXY2LonLat(x, y)]
+            count += 1
+        else:
+            not_explored.append(lane_id)
 
-def fitfunc(x,p): #f(x)= a x^2 + b x+ c
-    a,b,c=p
-    return c + b*x + a*x**2
+########################### variables ##############################
 
-# array of residuals
+path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
+path3 = 'C:/Users/simon/Documents/Supélec Projet 3A/Paris-sans-tp/'
+tracefile = 'truckTrace.xml'
 
-def residuals(p): 
-    return abs(dataLatTest-fitfunc(dataLongTest,p))
+#for timeslot
+duration = 5*60 #seconds
 
- # function we want to minimize
+#to check traces
+global count
+global positions
+global not_explored
+global last_positions
 
-def sum_residuals_custom(p):
-    return sum(residuals(p)**2)
+#check last position to avoid counting twice
+last_positions = {}
 
-# interpolation
+#to check traces
+count = 0
+positions = {}
+not_explored = []
 
-def interpolation(n, epsilon, x, y):
+########################### sources ###############################
+
+#import network
+if not ('net' in locals() or 'net' in globals()):
+    global net
+    net = sumolib.net.readNet(path3 + 'osm.net.xml')
+    print('net successfully imported')
+else:
+    print('net already imported')
+
+########################### plotting ##############################
+
+
+# get an iterable and turn it into an iterator
+context = iter(iterparse(path + tracefile, events=("start", "end")))
+
+# get the root element
+event, root = next(context)
+
+for event, elem in context:
     
-    global dataLongTest # dataset for interpolation
-    global dataLatTest
-    dataLongTest = x[0:3]
-    dataLatTest = y[0:3]
+    if event == "end" and elem.tag == "timestep":
+        time = int(float(elem.get('time')))
     
-    p0=[1,0,0] # initial parameters guess
-    p,cov,infodict,mesg,ier = scimin.leastsq(residuals, p0,full_output=True) #interpolation
-    
-    curve_interpolation = [p] # add model to result
-    curve_points = [x[0]]
-    i = 0
-    
-    while i < n :
-        
-        if abs(fitfunc(x[i],p) - y[i]) > epsilon:
+        for vehicle in elem.iter('vehicle'):
             
-            dataLongTest = x[(i-2):(i+2)]
-            dataLatTest = y[(i-2):(i+2)]
-            dataLatTest[0] = fitfunc(x[i-2],p)
-            
-            p,cov,infodict,mesg,ier=scimin.leastsq(residuals, p0,full_output=True)
-            pwith=scimin.fmin_slsqp(sum_residuals_custom,p)
-            
-            curve_interpolation.append(pwith)
-            curve_points.append(x[i-2])
-            i += 1
-            
-        i+=1
-    
-    curve_points.append(x[n-1]) # add last point 
-    
-    return curve_interpolation, curve_points
+            #if there is a vehicle
+            if not vehicle is None:
+                new_lign = vehicle.attrib
+                
+                vehicle_id = new_lign['lane']
+                x = float(new_lign['x'])
+                y = float(new_lign['y'])
+       	        
+                #check if first time in lane
+                if (not lane_id in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
+                    
+                    #hold in memory the last position
+                    last_positions[new_lign['id']] = lane_id
+                    
+                    #to check trace
+                    generate_positions_for_testing(lane_id, count, x, y, positions, not_explored)
+                    
+lign_ids = list(positions.keys())
+dataLong = []
+dataLat = []
 
-#----------------------------------plotting------------------------------------
+print(lign_ids[3])
 
-#METTRE LES COORDONNEES D'UN VEHICULE ICI
-dataLong =
-dataLat = 
+for pos in positions[lign_ids[3]]:
+    dataLong.append(pos[0])
+    dataLat.append(pos[1])
 
 # adding background map
 latMin = 48.774618 - 0.0005 # background map size
@@ -77,15 +111,11 @@ m = Basemap(llcrnrlon=longMin, llcrnrlat= latMin, urcrnrlon=longMax, urcrnrlat=l
 m.arcgisimage(service='ESRI_StreetMap_World_2D', xpixels = 12000, verbose= True)
 
 # adding GPS coordinates
-
-m.plot(dataLong,dataLat,ls="",marker="x",color="red",mew=2.0,label="Datas")
+m.plot(dataLong,dataLat,color="red",label="Datas")
 
 #adding path
-
-curve_interpolation, curve_points = interpolation(len(dataLong),0.0001, dataLong, dataLat)
-
 for e in range(len(dataLong)-1):
-    morex=numpy.linspace(dataLong[e],dataLong[e+1], num = 500, endpoint = True)
+    morex = numpy.linspace(dataLong[e],dataLong[e+1], num = 500, endpoint = True)
     morey = numpy.linspace(dataLat[e],dataLat[e+1], num = 500, endpoint = True)
     m.plot(morex,morey,color="blue")
 
