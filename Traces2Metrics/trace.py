@@ -71,7 +71,7 @@ def increment_dict_value(id_to_increment, dic):
         dic[id_to_increment] = 1
 
 def dist(p1,p2):
-    return math.sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
+    return sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
 
 ############################# metrics ##############################
 
