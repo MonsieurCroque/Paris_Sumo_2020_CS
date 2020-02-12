@@ -36,10 +36,15 @@ Make sure that the OD directory contains the XML file (By doing step 1 or by upl
 
 Go to Sumo directory and run the bash file ( ex. generateBike.bat ) corresponding to the paradigm that you want to generate movement and trace file. The trace file will be stored in the Traces folder 
 
-### 3) Run Trace2Metrics
+### 3) Check Traces
 
+Run the script plot.py to pick random trips and verify they are coherent with id name.
 
-### 4) Read and interpret metrics 
+### 4) Run Trace2Metrics
 
+Calculate metrics with traces data. It is possible to add or remove metrics directly in the script names trace.py.
 
+### 5) Read and interpret metrics 
+
+To be continued
 
