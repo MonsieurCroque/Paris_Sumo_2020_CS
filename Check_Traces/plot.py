@@ -78,10 +78,11 @@ for event, elem in context:
             if not vehicle is None:
                 new_lign = vehicle.attrib
                 
-                vehicle_id = new_lign['lane']
+                vehicle_id = new_lign['id']
                 x = float(new_lign['x'])
                 y = float(new_lign['y'])
-       	        
+       	        lane_id = new_lign['lane']
+                
                 #check if first time in lane
                 if (not lane_id in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
                     

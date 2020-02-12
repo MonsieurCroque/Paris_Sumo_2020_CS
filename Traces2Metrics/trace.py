@@ -243,7 +243,7 @@ if not ('last_positions' in locals() or 'last_positions' in globals()):
     global vehicule_is_in_location
     global commmunes_2_length
     global points
-    global fpd_timestep
+    global fcd_timestep
 
 #check last position to avoid counting twice
 last_positions = {}
@@ -281,7 +281,7 @@ for commune in communes_in_scope:
     commmunes_2_length[commune] = 0
     
 #Voronoi
-fpd_timestep = []
+fcd_timestep = []
 
 ######################### analysing ############################
 
@@ -314,7 +314,7 @@ for event, elem in context:
                 if (not lane_id in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
                     
                     #hold in memory the last position
-                    last_positions[new_lign['id']] = lane_id
+                    last_positions[new_lign['idd']] = lane_id
                     
             		#update metrics
                     total_distance(total_length, lane_id, lane_2_length)
@@ -323,7 +323,10 @@ for event, elem in context:
                     distance_traveled_per_time_slot(total_length_covered_by_timeslot, time, duration, lane_id)
                     lane_explorer(lane_id, lane_already_explored, time, duration)
                     trip_duration(vehicle_begin, vehicle_end, vehicle_id)
-                    get_most_used_lanes((lane_id, most_used_lanes))
+                    get_most_used_lanes(lane_id, most_used_lanes)
+        
+        if not time % 60 == 59:
+            get_voronoi_distance(points, fcd_timestep)
 
 #print histogram for bikes
 hist_bike = []
