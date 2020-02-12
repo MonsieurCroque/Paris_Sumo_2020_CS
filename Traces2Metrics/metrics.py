@@ -11,8 +11,8 @@ path2 = 'C:/Users/simon/Documents/Supélec Projet 3A/'
 path = 'C:/Users/wassim/Desktop/Paris_Sumo_2020_CS/'
 tracefile2 = 'Paris-sans-tp/trucksTrace.xml'
 #tracefile = 'bicycleTrace.xml'
-#tracefile = 'trucksTrace.xml'
-tracefile = 'carTrace.xml'
+tracefile = 'truckTracev2.xml'
+#tracefile = 'carTrace.xml'
 
 #for timeslot
 duration = 5*60 #seconds
@@ -152,4 +152,4 @@ for fpd in fpd_timestep:
     
 fcd_timestep=pd.DataFrame(fcd_timestep)
 
-fcd_timestep.to_csv("farmost_pt_car.csv")
+fcd_timestep.to_csv("farmost_pts_trucks.csv")
