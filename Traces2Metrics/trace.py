@@ -311,10 +311,10 @@ for event, elem in context:
                 y = float(new_lign['y'])
        	        
                 #check if first time in lane
-                if (not lane_id in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
+                if (not vehicle_id in last_positions.keys()) or (last_positions[vehicle_id] != lane_id):
                     
                     #hold in memory the last position
-                    last_positions[new_lign['idd']] = lane_id
+                    last_positions[vehicle_id] = lane_id
                     
             		#update metrics
                     total_distance(total_length, lane_id, lane_2_length)
