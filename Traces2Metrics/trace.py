@@ -73,6 +73,13 @@ def increment_dict_value(id_to_increment, dic):
 def dist(p1,p2):
     return sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
 
+def lines_to_box(points_in_lines, margin):
+    points_in_box = []
+    for point in points_in_lines:
+        points_in_box.append((point[0]+margin,point[1]+margin))
+        points_in_box.append((point[0]-margin,point[1]-margin))
+    return points_in_box
+
 ############################# metrics ##############################
 
 # Compute the distance of between the far_most points and its neibourghs 
@@ -98,6 +105,7 @@ def distance_traveled_per_time_slot(total_length_covered_by_timeslot, time, dura
 def lane_explorer(lane_id, lane_already_explored, time, duration):
     if not lane_id in lane_already_explored:
         add_to_list(nb_lanes_explored_by_timeslot,int(time/duration), 1)
+        lane_already_explored.append(lane_id)
 
 #to get duration of trips by vehicle_id
 def trip_duration(vehicle_begin, vehicle_end, vehicle_id):
@@ -122,8 +130,8 @@ def count_vehicle_passing_through_peripherique(x, y, polygons_of_roads_in_scope,
         vehicule_is_in_location[(new_lign['id'],"Périphérique")]=1
 
 #Compute the total distance
-def total_distance(total_length, lane_id, lane_2_length):
-    total_length += lane_2_length(lane_id)
+def total_distance(lane_id, lane_2_length):
+    return lane_2_length(lane_id)
 
 #Match with any city that contains (x,y) and then add the trip length to this city
 def trip_length_to_commune(lane_id, polygons_of_communes_in_scope, x, y, commmunes_2_length):
@@ -147,11 +155,10 @@ def farthest_points_distance(points):
                 voronoi_point_desc[id_voronoi]=(vor.vertices[id_voronoi],dist(vor.points[id_dep],vor.vertices[id_voronoi]))
     return list(voronoi_point_desc.values())
 
-
-def get_voronoi_distance(points, fcd_timestep):
+def get_voronoi_distance(points):
 
     if len(points) > 8:
-        fcd={}
+        
         for point, distance in farthest_points_distance(points):
             x = point[0]
             y = point[1] 
@@ -162,7 +169,22 @@ def get_voronoi_distance(points, fcd_timestep):
                 fcd[commune] = distance
             else:
                 fcd[commune] = max(fcd[commune],distance)
-            fcd_timestep.append(fcd)
+
+# def get_voronoi_distance(points, fcd_timestep):
+
+#     if len(points) > 8:
+#         fcd={}
+#         for point, distance in farthest_points_distance(points):
+#             x = point[0]
+#             y = point[1] 
+            
+#             commune = get_location_from_xy(x, y, polygons_of_communes_in_scope)
+            
+#             if commune not in fcd.keys():
+#                 fcd[commune] = distance
+#             else:
+#                 fcd[commune] = max(fcd[commune],distance)
+#             fcd_timestep.append(fcd)
 
 ########################### variables ##############################
 
@@ -174,6 +196,9 @@ tracefile = 'truckTrace.xml'
 
 #for timeslot
 duration = 5*60 #seconds
+
+#to map periph
+margin = 4.0 #roughly 5 meters
 
 ########################### sources ###############################
 
@@ -222,7 +247,7 @@ for n in range(len(roads)):
         nameid=roads['name'][n]+'_'+str(roads['osm_id'][n])
         coord = extract_coordinates_list_from_string(roads["geometry"][n])
         if check_each_points_xy(coord, bound_inf, bound_sup):
-            polygons_of_roads_in_scope[nameid] = LineString(coord)
+            polygons_of_roads_in_scope[nameid] = Polygon(lines_to_box(coord, margin))
 
 #list of roads in scope
 roads_in_scope = list(polygons_of_roads_in_scope.keys())
@@ -232,7 +257,6 @@ roads_in_scope = list(polygons_of_roads_in_scope.keys())
 #global variable
 if not ('last_positions' in locals() or 'last_positions' in globals()):
     global last_positions
-    global total_length
     global lane_already_explored
     global most_used_lanes
     global total_length_covered_by_timeslot
@@ -244,6 +268,9 @@ if not ('last_positions' in locals() or 'last_positions' in globals()):
     global commmunes_2_length
     global points
     global fcd_timestep
+    
+    global fcd
+fcd = {}
 
 #check last position to avoid counting twice
 last_positions = {}
@@ -309,7 +336,8 @@ for event, elem in context:
                 lane_id = new_lign['lane']
                 x = float(new_lign['x'])
                 y = float(new_lign['y'])
-       	        
+       	        save_points_for_voronoi_distance(x, y, points)
+                
                 #check if first time in lane
                 if (not vehicle_id in last_positions.keys()) or (last_positions[vehicle_id] != lane_id):
                     
@@ -317,16 +345,20 @@ for event, elem in context:
                     last_positions[vehicle_id] = lane_id
                     
             		#update metrics
-                    total_distance(total_length, lane_id, lane_2_length)
+                    total_length += total_distance(lane_id, lane_2_length)
                     total_trip_length_by_road_type(x, y, polygons_of_roads_in_scope, total_length_by_road_surface)
                     count_vehicle_passing_through_peripherique(x, y, polygons_of_roads_in_scope, vehicule_is_in_location)
                     distance_traveled_per_time_slot(total_length_covered_by_timeslot, time, duration, lane_id)
                     lane_explorer(lane_id, lane_already_explored, time, duration)
                     trip_duration(vehicle_begin, vehicle_end, vehicle_id)
                     get_most_used_lanes(lane_id, most_used_lanes)
-        
+                    trip_length_to_commune(lane_id, polygons_of_communes_in_scope, x, y, commmunes_2_length)
+                    
         if not time % 60 == 59:
-            get_voronoi_distance(points, fcd_timestep)
+            get_voronoi_distance(points)
+            #get_voronoi_distance(points, fcd_timestep)
+    
+    root.clear()
 
 #print histogram for bikes
 hist_bike = []
@@ -336,10 +368,15 @@ for edge_id in vehicle_end.keys():
     hist_bike.append(round((vehicle_end[edge_id]-vehicle_begin[edge_id])/60))
 
 #print result
-print(total_length_by_road_surface)
-print(commmunes_2_length)
+
+pd.DataFrame(total_length_by_road_surface, index=[0]).to_csv("length by road.csv")
+pd.DataFrame(commmunes_2_length, index=[0]).to_csv("length by commune.csv")
+pd.DataFrame(nb_lanes_explored_by_timeslot).to_csv("nb lanes every 5 minutes.csv")
+#pd.DataFrame(fcd_timestep).to_csv("voronoi by timestep.csv")
+pd.DataFrame(fcd, index=[0]).to_csv("voronoi by timestep.csv")
+pd.DataFrame(sorted(most_used_lanes)[:10]).to_csv("most used lane by id.csv")
+
 print(total_length)
-print(sorted(most_used_lanes)[:10])
 
 plt.plot(total_length_covered_by_timeslot)
 plt.plot(nb_lanes_explored_by_timeslot)

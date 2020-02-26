@@ -16,20 +16,24 @@ from mpl_toolkits.basemap import Basemap
 ########################### functions ##############################
 
 def generate_positions_for_testing(lane_id, count, x, y, positions, not_explored):
+    no_progress = True
     if lane_id in positions.keys():
         positions[lane_id].append(net.convertXY2LonLat(x, y))
+        no_progress = False
     elif not lane_id in not_explored and count < 101:
         if random.random() < 0.05:
             positions[lane_id] = [net.convertXY2LonLat(x, y)]
             count += 1
+            no_progress = False
         else:
             not_explored.append(lane_id)
+    return no_progress
 
 ########################### variables ##############################
 
 path = 'C:/Users/simon/Documents/Supélec Projet 3A/'
 path3 = 'C:/Users/simon/Documents/Supélec Projet 3A/Paris-sans-tp/'
-tracefile = 'truckTrace.xml'
+tracefile = 'carTrace.xml'
 
 #for timeslot
 duration = 5*60 #seconds
@@ -71,11 +75,14 @@ for event, elem in context:
     
     if event == "end" and elem.tag == "timestep":
         time = int(float(elem.get('time')))
-    
+        no_progress = True
+        count_veh = 0
+        
         for vehicle in elem.iter('vehicle'):
             
             #if there is a vehicle
             if not vehicle is None:
+                count_veh += 1
                 new_lign = vehicle.attrib
                 
                 vehicle_id = new_lign['id']
@@ -84,21 +91,25 @@ for event, elem in context:
        	        lane_id = new_lign['lane']
                 
                 #check if first time in lane
-                if (not lane_id in last_positions.keys()) or (last_positions[new_lign['id']] != new_lign['lane']):
+                if (not vehicle_id in last_positions.keys()) or (last_positions[vehicle_id] != new_lign['lane']):
                     
                     #hold in memory the last position
-                    last_positions[new_lign['id']] = lane_id
+                    last_positions[lane_id] = vehicle_id
                     
                     #to check trace
-                    generate_positions_for_testing(lane_id, count, x, y, positions, not_explored)
-                    
+                    no_progress = no_progress and generate_positions_for_testing(vehicle_id, count, x, y, positions, not_explored)
+        if no_progress and count >= 101:
+            break
+    
+    root.clear()
+
 lign_ids = list(positions.keys())
 dataLong = []
 dataLat = []
 
-print(lign_ids[3])
+print(lign_ids[4])
 
-for pos in positions[lign_ids[3]]:
+for pos in positions[lign_ids[4]]:
     dataLong.append(pos[0])
     dataLat.append(pos[1])
 
